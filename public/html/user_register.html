@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>$$헌팅나라$$</title>
+
+    <!-- bootstrap including jquery -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <style>
+        img {
+            top:0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .form_title_box{
+            height : 100px;
+            background-color : #3b3838;
+            color:white;
+            text-align : center;
+            padding-top: 20px;
+        }
+        .form_text {
+            color: #3b3838;
+            font-weight : bold;
+            display : inline-block;
+            margin-left : 10%;
+            margin-right : 10px;
+        }
+        .form_input{
+            display : inline-block;
+            border : solid 1px #C9C9C9;
+            background-color : #F5F5F5;
+            width : 80%;
+            margin-left : 10%;
+        }
+        .small{
+            width: 25%;
+            display: inline-block;
+            margin-left : 0%;
+        }
+        .form_file{
+            display: inline-block;
+            width: 50%;
+            margin-left: 10%;
+
+        }
+        .plus_button{
+            display: inline-block;
+            margin-left : 5px;
+        }
+        .submit_button{
+            margin-left:40%; margin-bottom:20px; width: 20%; height: 50px; background-color: #3b3838; color:white; border:none
+        }
+
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+    <!-- javascript -->
+    <script type="text/javascript">
+        // 회원가입 - 아이디 중복 검사
+        function checkId() {
+            if($('#id').val()===""){
+                alert('입력된 아이디가 없습니다');
+                return false;
+            }
+            $.ajax({
+                type: 'post',
+                url: '/user/checkId',
+                data: {
+                    id: $('#id').val()
+                },
+                success: function(data, status) {
+                    if (data.duplicated) {
+                        alert('이미 존재하는 아이디입니다');
+                        $('#id').val('')
+                    } else {
+                        alert('사용할 수 있는 아이디입니다');
+                        $('#id').prop('readonly', true);
+                    }
+                },
+                error: function(error) {
+                    console.log(error)
+                }
+            });
+        }
+
+        function moreInfo() {
+            if ($('#freelancer')[0].checked) {
+                $('fieldset.additional_form').show();
+                $('fieldset.additional_form input').prop('required', true);
+            } else {
+                $('fieldset.additional_form').hide();
+                $('fieldset.additional_form input').prop('required', false);
+            }
+        }
+
+        function addLanguage() {
+            $('fieldset.additional_form').append('<p class="form_text">언어</p><input class="w3-input form_input small" id="language" type="text" name="language">');
+            $('fieldset.additional_form').append('<p class="form_text" style="margin-left:3%">능숙도(0-5)</p><input class="w3-input form_input small" type="number" id="competence" name="competence" min="0" max="5"><br><br>');
+        }
+        function submitForm() {
+            var radioflag = false;
+            if (!$('#id').prop('readonly')) {
+                alert('아이디 중복검사를 해주세요');
+                return false;
+            } else {
+                const formData = new FormData();
+                for (const input of $('#register input[type="radio"]')) {
+                    if(input.checked) {
+                        formData.append(input.name, input.value);
+                        radioflag = false;}
+                    else if(radioflag) {
+                        alert("회원 타입을 선택해주세요")
+                        return false;}
+                    else{
+                        radioflag = true;}
+                }
+                for (const input of $('#register input').not($('#register input[type="radio"]')).not($('#register input[type="file"]'))) {
+                    if(input.value === ""){
+                        switch(input.name){
+                            case("password"):
+                                alert("입력된 비밀번호가 없습니다");
+                                return false;
+                            case("name"):
+                                alert("입력된 이름이 없습니다");
+                                return false;
+                            case("phone"):
+                                alert("입력된 전화번호가 없습니다");
+                                return false;
+                        }
+                        if($('#freelancer')[0].checked){
+                            switch(input.name){
+                                case("age"):
+                                    alert("입력된 나이가 없습니다");
+                                    return false;
+                                case("career"):
+                                    alert("입력된 경력이 없습니다");
+                                    return false;
+                                case("major"):
+                                    alert("입력된 전공학과가 없습니다");
+                                    return false;
+                                case("language"):
+                                    alert("최소 하나 이상의 능숙한 언어를 입력해주세요");
+                                    return false;
+                                case("competence"):
+                                    alert("입력한 언어의 능숙도를 입력해주세요");
+                                    return false;
+                            }
+                        }
+                    }
+                    if(($('#freelancer')[0].checked) && (input.name === "competence") && ((input.value<0)|| input.value>5)){
+                        alert("입력한 능숙도의 범위를 확인해주세요");
+                        return false;
+                    }
+                    formData.append(input.name, input.value);
+                }
+                if ($('#freelancer')[0].checked) {
+                    for (const input of $('#register input[type="file"]')) {
+                        if (input.files.length === 0) {
+                            alert("포트폴리오를 업로드 해주세요")
+                            return false;
+                        }
+                        formData.append(input.name, input.files[0]);
+                    }
+                }
+                $.ajax({
+                    type: 'post',
+                    enctype: 'multipart/form-data',
+                    processData: false,
+                    contentType: false,
+                    async: false,
+                    url: '/user/register',
+                    data: formData,
+                    success: function(data, status) {
+                        if (data.success) {
+                            alert('회원가입이 완료되었습니다');
+                            location.href = '../';
+                        } else {
+                            alert('회원가입이 완료되지 않았습니다');
+                            location.href = './register';
+                        }
+                    },
+                    error: function(error) {
+                        console.log(error);
+                        alert('회원가입이 완료되지 않았습니다');
+                        location.href = './register';
+                    }
+                });
+            }
+        }
+
+    </script>
+</head>
+<body>
+<div class="w3-card-4" style="width:80%; margin-left:10%; margin-top: 15px;">
+    <div class="w3-container form_title_box">
+        <h2>Sign Up</h2>
+    </div><br>
+    <div class="register_form">
+        <form id="register"> <!--action="/user/register" method="post" enctype="multipart/form-data" onsubmit="submitForm();"-->
+            <p class="form_text"></p>
+            <input type="radio" name="type" value="client" onchange="moreInfo();" />의뢰인
+            <input type="radio" name="type" id="freelancer" value="freelancer" onchange="moreInfo();" />프리랜서<br><br>
+            <p class="form_text">아이디</p>
+            <button type="button" onclick="checkId();">중복검사</button>
+            <input class="w3-input form_input" type="text" name="id" id="id" required /><br><br>
+            <p class="form_text">비밀번호</p>
+            <input class="w3-input form_input" type="password" name="pw" id="pw" required /><br><br>
+            <p class="form_text">이름</p>
+            <input class="w3-input form_input" type="text" name="name" required/><br><br>
+            <p class="form_text">휴대폰</p>
+            <input class="w3-input form_input" type="phone" name="phone" placeholder="'-'를 제외한 숫자만 입력하세요" required/><br><br>
+            <fieldset class="additional_form" form="register" style="border:none;" hidden>
+                <p class="form_text">나이</p>
+                <input class="w3-input form_input" type="number" name="age" min="0" max="200"><br><br>
+                <p class="form_text">개발 경력(년)</p>
+                <input class="w3-input form_input" type="number" name="career" min="0" max="200"><br><br>
+                <p class="form_text">전공학과</p>
+                <input class="w3-input form_input" type="text" name="major"><br><br>
+                <p class="form_text">포트폴리오</p>
+                <input class="w3-input form_input" type="file" name="portfolio"><br><br>
+
+                <p class="form_text">언어별 능숙도</p>
+                <button type="button" class="plus_button" onclick="addLanguage();">+</button>
+                <div class="w3-bar">
+                    <p class="form_text">언어</p><input class="w3-input form_input small" id="language" type="text" name="language">
+                    <p class="form_text" style="margin-left:3%">능숙도(0-5)</p><input class="w3-input form_input small" type="number" id="competence" name="competence" min="0" max="5"><br><br>
+                </div>
+            </fieldset>
+            <button class="submit_button" type="button" onclick="submitForm();">가입하기</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
